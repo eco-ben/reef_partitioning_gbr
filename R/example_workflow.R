@@ -13,13 +13,16 @@ set.seed(123)
 
 ID <- "23055101104" # One Tree Island Reef
 
+# Load reef polygons data
 reef_polygons <- st_read("../canonical-reefs/output/rrap_canonical_2025-01-10-T13-28-06.gpkg")
 
+# Load bathymetry and geomorphic habitat data
+# ! Ensure that these two raster datasets use the same CRS !
 bathy_raster <- rast("../../reef_partitioning/Data/required_data/bathy/Mackay-Capricorn/MC_wg84.tif")
 habitat_raster <- rast("../../reef_partitioning/Data/required_data/GBR10 GBRMP Geomorphic.tif")
 
-# Must ensure all input data are in the same CRS
-reef_polygons <- st_make_valid(st_transform(reef_polygons, crs = sf::st_crs(habitat_raster)))
+# Must ensure all input data are in the same CRS (instead of GDA2020)
+reef_polygons <- st_make_valid(st_transform(reef_polygons, crs = st_crs(habitat_raster)))
 
 habitat_categories <- c(15, 22, 14, 21) # reef crest, reef slope, outer reef flat, sheltered reef slope
 
@@ -28,6 +31,8 @@ hex_resolution <- 12
 unit <- "km2"
 
 # Extract pixel data for target reef - OTI reef
+# This will select pixels from `habitat_raster` that cover `target_reef` and
+# extract the depth values that cover these pixels as well.
 target_reef <- reef_polygons[reef_polygons$UNIQUE_ID == ID, ]
 pixel_data <- extract_pixel_points(
     target_reef,
@@ -42,7 +47,8 @@ pixel_data <- extract_pixel_points(
 )
 pixel_data$UNIQUE_ID <- target_reef$UNIQUE_ID
 
-# Test approach with MST constr.hclust
+# Cluster the pixels into site clusters using constr.clust algorithm with a
+# minimum spanning tree input using default settings
 mst_hclust_pixels <- cluster_reef_pixels(
     pixel_data,
     habitat_clustering_function = function(x) {
@@ -51,4 +57,5 @@ mst_hclust_pixels <- cluster_reef_pixels(
         clusters
     }
 )
+# Collate clustered site pixels into site polygons
 mst_hclust_sites <- clustered_pixels_to_polygons(mst_hclust_pixels)

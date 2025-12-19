@@ -59,3 +59,12 @@ mst_hclust_pixels <- cluster_reef_pixels(
 )
 # Collate clustered site pixels into site polygons
 mst_hclust_sites <- clustered_pixels_to_polygons(mst_hclust_pixels)
+
+# Cluster the pixels into site clusters using skater algorithm with minimum spanning
+# tree (mst is created within reef_skater())
+skater_pixels <- cluster_reef_pixels(
+    pixel_data,
+    habitat_clustering_function = reef_skater,
+    parallelisation = "Windows"
+)
+skater_sites <- clustered_pixels_to_polygons(skater_pixels)

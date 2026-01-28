@@ -1,5 +1,5 @@
 # Install package using GitHub repo and specific template branch
-remotes::install_github("VHallerBull/ReefPartitionAllenAtlas", ref="package-template")
+remotes::install_github("open-AIMS/ReefPartitionUniversal", ref="package-template")
 
 library(ReefPartitionAllenAtlas)
 
@@ -49,22 +49,15 @@ pixel_data$UNIQUE_ID <- target_reef$UNIQUE_ID
 
 # Cluster the pixels into site clusters using constr.clust algorithm with a
 # minimum spanning tree input using default settings
-mst_hclust_pixels <- cluster_reef_pixels(
-    pixel_data,
-    habitat_clustering_function = function(x) {
-        mst <- prepare_mst(x)
-        clusters <- constrained_hclust(x, as_edgelist(mst))
-        clusters
-    }
-)
+mst_hclust_pixels <- cluster_reef_pixels(pixel_data)
+
 # Collate clustered site pixels into site polygons
 mst_hclust_sites <- clustered_pixels_to_polygons(mst_hclust_pixels)
 
-# Cluster the pixels into site clusters using skater algorithm with minimum spanning
-# tree (mst is created within reef_skater())
-skater_pixels <- cluster_reef_pixels(
-    pixel_data,
-    habitat_clustering_function = reef_skater,
-    parallelisation = "Windows"
-)
-skater_sites <- clustered_pixels_to_polygons(skater_pixels)
+sampled_id <- sample(levels(mst_hclust_sites$site_id))
+mst_hclust_sites$sampled_id <- factor(mst_hclust_sites$site_id, levels = sampled_id)
+
+# Post process site polygons
+post_processed_sites <- site_postprocessing(mst_hclust_sites, min_site_area = 50)
+sampled_id <- sample(levels(post_processed_sites$site_id))
+post_processed_sites$sampled_id <- factor(post_processed_sites$site_id, levels = sampled_id)
